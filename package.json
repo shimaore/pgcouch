@@ -1,0 +1,28 @@
+{
+  "name": "@shimaore/pgcouch",
+  "version": "1.0.0",
+  "description": "PostgreSQL with record semantics like CouchDB",
+  "main": "index.mjs",
+  "license": "MIT",
+  "repository": "https://gitlab.com/shimaore/pg-couch",
+  "author": "Stéphane Alnet <stephane@shimaore.net>",
+  "private": false,
+  "dependencies": {
+    "@shimaore/lake": "^1.2.1",
+    "pg": "^8.7.1",
+    "pg-query-stream": "^4.2.1",
+    "pino": "^7.5.1",
+    "runtypes": "^6.5.0",
+    "ulid": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.6.1",
+    "ava": "^3.15.0",
+    "typescript": "^4.5.2"
+  },
+  "scripts": {
+    "build": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node index.ts && mv index.js index.mjs",
+    "pretest": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node test/test.ts && mv test/test.js test/test.mjs && sed -i -e \"s|from '..'|from '../index.mjs'|\" test/test.mjs",
+    "test": "PGHOST=/var/run/postgresql ava"
+  }
+}
