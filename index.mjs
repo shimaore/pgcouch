@@ -31,6 +31,16 @@ Revision).enforce((a) => {
     return Revision.check(hash.digest('hex'));
 });
 export class TableError extends Error {
+    constructor(msg, key) {
+        super(msg);
+        this.key = key;
+    }
+    toJSON() {
+        return {
+            message: super.toString(),
+            key: this.key,
+        };
+    }
 }
 export class Table {
     constructor(check, pool, name) {
@@ -38,7 +48,7 @@ export class Table {
         this.pool = pool;
         this.name = name;
         TableName.check(this.name);
-        this.tableName = `${this.name}  Data`;
+        this.tableName = this.name; // or could be e.g. `${this.name}  Data`
         this.logger = logger.child({ table: this.name });
     }
     async init() {
@@ -46,27 +56,31 @@ export class Table {
         const client = await this.pool.connect();
         // Returns an array with 4 `result`
         const table = [
-            `CREATE TABLE "${tableName}" ( data JSONB NOT NULL );`,
-            `CREATE UNIQUE INDEX "${tableName} _id" ON "${tableName}" ((data->'_id'));`,
-            `CREATE INDEX "${tableName} gin" ON "${tableName}" USING GIN(data jsonb_path_ops);`,
-            `CREATE INDEX "${tableName} btree" ON "${tableName}" USING BTREE(data);`,
+            `CREATE TABLE "${tableName}" ( data JSONB NOT NULL )`,
+            `CREATE UNIQUE INDEX "${tableName} _id" ON "${tableName}" ((data->'_id'))`,
+            `CREATE INDEX "${tableName} gin" ON "${tableName}" USING GIN(data jsonb_path_ops)`,
+            `CREATE INDEX "${tableName} btree" ON "${tableName}" USING BTREE(data)`,
         ];
-        for (const q of table) {
-            try {
-                const res = await client.query(q);
-                this.logger.info({ q, res }, 'init');
+        try {
+            await client.query('BEGIN');
+            for (const q of table) {
+                await client.query(q);
             }
-            catch (err) {
-                if (err?.code === '42P07') {
-                    this.logger.info({ q }, 'init: duplicate (ignored)');
-                }
-                else {
-                    client.release();
-                    throw err;
-                }
+            await client.query('COMMIT');
+        }
+        catch (err) {
+            await client.query('ROLLBACK');
+            const code = err?.code;
+            if (code === '42P07' || code === '23505') {
+                this.logger.info({}, 'init: duplicate (ignored)');
+            }
+            else {
+                throw err;
             }
         }
-        client.release();
+        finally {
+            client.release();
+        }
     }
     async put(data) {
         this.check(data);
@@ -75,16 +89,13 @@ export class Table {
         const _rev = revision(data);
         const finalData = this.check({ ...data, _rev });
         if (data._rev) {
+            const key = { _id: data._id, _rev: data._rev };
             const res = await client.query(`
         UPDATE "${tableName}"  SET data = $1 WHERE data @> $2
-      `, [
-                finalData,
-                { _id: data._id, _rev: data._rev },
-            ]);
+      `, [finalData, key]);
             if (res.rowCount !== 1) {
-                throw new TableError('Missing');
+                throw new TableError('Missing', key);
             }
-            this.logger.info({ res }, 'put');
             client.release();
             return finalData;
         }
@@ -95,9 +106,8 @@ export class Table {
                 finalData,
             ]);
             if (res.rowCount !== 1) {
-                throw new TableError('Invalid');
+                throw new TableError('Invalid', data);
             }
-            this.logger.info({ res }, 'put');
             client.release();
             return finalData;
         }
@@ -119,15 +129,13 @@ export class Table {
         Revision.check(data._rev);
         const { tableName } = this;
         const client = await this.pool.connect();
+        const key = { _id: data._id, _rev: data._rev };
         const res = await client.query(`
       DELETE FROM "${tableName}" WHERE data @> $1
-    `, [
-            { _id: data._id, _rev: data._rev },
-        ]);
+    `, [key]);
         client.release();
-        this.logger.info({ res }, 'delete');
         if (res.rowCount !== 1) {
-            throw new TableError(`Missing`);
+            throw new TableError(`Missing`, key);
         }
     }
     /*
