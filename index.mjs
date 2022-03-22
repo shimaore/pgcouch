@@ -12,15 +12,23 @@ export const handledPool = async () => {
     pool.on('error', (error) => logger.error({ error }, 'pool.error'));
     return pool;
 };
-// runtype TableName ensures the name is a valid (e.g. CouchDB) name.
+/** TableName — ensures the name is a valid (e.g. CouchDB) name.
+ */
 export const TableName = rt.String;
-// runtype TableData contains at least a field named `_id`
-export const DocumentId = rt.String.withConstraint(s => s.length > 0 || 'document id must not be the empty string');
-export const Revision = rt.String.withBrand('Revision').withConstraint(s => s.length > 0 || 'revision must not be the empty string');
+/** TableData — contains at least a field named `_id`
+ */
+export const DocumentId = rt.String
+    .withConstraint(s => s.length > 0 || 'document id must not be the empty string');
+export const Revision = rt.String
+    .withBrand('Revision')
+    .withConstraint(s => s.length > 0 || 'revision must not be the empty string');
 export const TableData = rt.Record({
     _id: DocumentId,
     _rev: Revision.optional(),
 });
+/**
+ * revision — computes a revision from the content of the record
+ */
 const revision = Contract(
 // Parameters
 TableData, 
@@ -51,6 +59,8 @@ export class Table {
         this.tableName = this.name; // or could be e.g. `${this.name}  Data`
         this.logger = logger.child({ table: this.name });
     }
+    /** init — idempotent table creation
+     */
     async init() {
         const { tableName } = this;
         const client = await this.pool.connect();
@@ -138,14 +148,14 @@ export class Table {
             throw new TableError(`Missing`, key);
         }
     }
-    /*
+    /**
      * `query` is a generic table query.
      * It can use:
      * - MongoDB-style query = { _id: 'user:bob' }, see
      *   [Containment](https://www.postgresql.org/docs/current/datatype-json.html#JSON-CONTAINMENT)
      * - JSONPatch query = '$.year > 1989', see
      *   [JSON Path](https://www.postgresql.org/docs/current/functions-json.html#FUNCTIONS-SQLJSON-PATH)
-     *
+     * It return an AsyncIterable with extended capabilities.
      */
     async query(query) {
         const { tableName } = this;
