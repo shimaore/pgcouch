@@ -26,7 +26,7 @@
   "scripts": {
     "build": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node index.ts && mv index.js index.mjs",
     "build:cjs": "esbuild --outfile=index.cjs index.mjs --format=cjs",
-    "pretest": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node test/test.ts && mv test/test.js test/test.mjs && sed -i -e \"s|from '..'|from '../index.mjs'|\" test/test.mjs",
+    "pretest": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node test/test.ts && mv test/test.js test/test.mjs && esbuild --outfile=test/test.cjs test/test.mjs --format=cjs && sed -i -e \"s|from '..'|from '../index.mjs'|\" test/test.mjs",
     "test": "PGHOST=/var/run/postgresql ava"
   }
 }
