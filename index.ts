@@ -15,17 +15,22 @@ export const handledPool = async () => {
   return pool
 }
 
-// runtype TableName ensures the name is a valid (e.g. CouchDB) name.
+/** TableName — ensures the name is a valid (e.g. CouchDB) name.
+ */
 export const TableName = rt.String
 // .withConstraint( s => !!s.match(/^[a-z_][a-z0-9]*$/) )
 export type TableName = rt.Static<typeof TableName>
 
-// runtype TableData contains at least a field named `_id`
+/** TableData — contains at least a field named `_id`
+ */
 
-export const DocumentId = rt.String.withConstraint( s => s.length > 0 || 'document id must not be the empty string' )
+export const DocumentId = rt.String
+  .withConstraint( s => s.length > 0 || 'document id must not be the empty string' )
 export type DocumentId = rt.Static<typeof DocumentId>
 
-export const Revision = rt.String.withBrand('Revision').withConstraint( s => s.length > 0 || 'revision must not be the empty string')
+export const Revision = rt.String
+  .withBrand('Revision')
+  .withConstraint( s => s.length > 0 || 'revision must not be the empty string')
 export type Revision = rt.Static<typeof Revision>
 
 export const TableData = rt.Record({
@@ -34,6 +39,9 @@ export const TableData = rt.Record({
 })
 export type TableData = rt.Static<typeof TableData>
 
+/**
+ * revision — computes a revision from the content of the record
+ */
 const revision = Contract(
   // Parameters
   TableData,
@@ -68,6 +76,8 @@ export class Table<T extends TableData> {
     this.logger = logger.child({ table: this.name })
   }
 
+  /** init — idempotent table creation
+   */
   async init() {
     const { tableName } = this
     const client = await this.pool.connect()
@@ -154,14 +164,14 @@ export class Table<T extends TableData> {
     }
   }
 
-  /*
+  /**
    * `query` is a generic table query.
    * It can use:
    * - MongoDB-style query = { _id: 'user:bob' }, see
    *   [Containment](https://www.postgresql.org/docs/current/datatype-json.html#JSON-CONTAINMENT)
    * - JSONPatch query = '$.year > 1989', see
    *   [JSON Path](https://www.postgresql.org/docs/current/functions-json.html#FUNCTIONS-SQLJSON-PATH)
-   *
+   * It return an AsyncIterable with extended capabilities.
    */
   async query(query:string|object) : Promise<LakeAsyncIterator<T>> {
     const { tableName } = this
