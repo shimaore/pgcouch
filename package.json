@@ -10,17 +10,17 @@
   "author": "Stéphane Alnet <stephane@shimaore.net>",
   "private": false,
   "dependencies": {
-    "@shimaore/lake": "^2.0.1",
+    "@shimaore/lake": "^2.1.0",
     "pg": "^8.7.3",
     "pg-query-stream": "^4.2.3",
-    "pino": "^7.9.2",
+    "pino": "^8.4.2",
     "runtypes": "^6.5.1",
     "ulid": "^2.3.0"
   },
   "devDependencies": {
     "@types/pg": "^8.6.5",
     "ava": "^4.1.0",
-    "esbuild": "^0.14.27",
+    "esbuild": "^0.15.5",
     "typescript": "^4.6.2"
   },
   "scripts": {

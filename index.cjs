@@ -16,7 +16,10 @@ var __copyProps = (to, from2, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target, mod));
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var pgcouch_exports = {};
 __export(pgcouch_exports, {
@@ -32,12 +35,13 @@ __export(pgcouch_exports, {
 module.exports = __toCommonJS(pgcouch_exports);
 var import_pg = __toESM(require("pg"), 1);
 var import_pg_query_stream = __toESM(require("pg-query-stream"), 1);
-var import_lake = require("@shimaore/lake");
+var import_lake = __toESM(require("@shimaore/lake"), 1);
 var import_pino = __toESM(require("pino"), 1);
 var import_runtypes = require("runtypes");
 var rt = __toESM(require("runtypes"), 1);
 var import_crypto = require("crypto");
 const { Pool } = import_pg.default;
+const { from } = import_lake.default;
 const logger = (0, import_pino.default)({ name: "@shimaore/pgcouch" });
 const handledPool = async () => {
   const pool = new Pool();
@@ -51,7 +55,10 @@ const TableData = rt.Record({
   _id: DocumentId,
   _rev: Revision.optional()
 });
-const revision = (0, import_runtypes.Contract)(TableData, Revision).enforce((a) => {
+const revision = (0, import_runtypes.Contract)(
+  TableData,
+  Revision
+).enforce((a) => {
   const hash = (0, import_crypto.createHash)("sha256");
   hash.update(JSON.stringify(a));
   return Revision.check(hash.digest("hex"));
@@ -161,8 +168,8 @@ class Table {
     const { tableName } = this;
     const select = typeof query === "string" ? `SELECT data FROM "${tableName}" WHERE data @@ $1` : `SELECT data FROM "${tableName}" WHERE data @> $1`;
     const queryStream = new import_pg_query_stream.default(select, [query]);
-    const lake = await buildLake(queryStream, this.pool);
-    return lake.map((data) => this.check(data));
+    const lake2 = await buildLake(queryStream, this.pool);
+    return lake2.map((data) => this.check(data));
   }
 }
 const buildLake = async (queryStream, pool) => {
@@ -177,5 +184,5 @@ const buildLake = async (queryStream, pool) => {
       resolve(stream2);
     });
   });
-  return (0, import_lake.from)(stream).map(({ data }) => data);
+  return from(stream).map(({ data }) => data);
 };

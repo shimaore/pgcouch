@@ -1,7 +1,8 @@
 import Pg, { Pool as PoolType, Query } from 'pg'
 const { Pool } = Pg
 import QueryStream from 'pg-query-stream'
-import { from, LakeAsyncIterator } from '@shimaore/lake'
+import lake, { LakeAsyncIterator } from '@shimaore/lake'
+const { from } = lake
 import Pino from 'pino'
 import { Contract } from 'runtypes'
 import * as rt from 'runtypes'
