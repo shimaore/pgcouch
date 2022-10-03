@@ -77,7 +77,8 @@ export class Table<T extends TableData> {
     this.logger = logger.child({ table: this.name })
   }
 
-  /** init — idempotent table creation
+  /** init — Connection and idempotent table creation
+   * Must be called before any other operation.
    */
   async init() {
     const { tableName } = this
@@ -85,6 +86,8 @@ export class Table<T extends TableData> {
     // Returns an array with 4 `result`
     const table = [
       `CREATE TABLE "${tableName}" ( data JSONB NOT NULL )`,
+      // We store only one record per _id (we do not keep historical revisions,
+      // since we are not planning to support master-master replication).
       `CREATE UNIQUE INDEX "${tableName} _id" ON "${tableName}" ((data->'_id'))`,
       `CREATE INDEX "${tableName} gin" ON "${tableName}" USING GIN(data jsonb_path_ops)`,
       `CREATE INDEX "${tableName} btree" ON "${tableName}" USING BTREE(data)`,
@@ -120,6 +123,7 @@ export class Table<T extends TableData> {
         UPDATE "${tableName}"  SET data = $1 WHERE data @> $2
       `, [ finalData, key ])
       if(res.rowCount !== 1) {
+        // Missing, conflict, …
         throw new TableError('Missing',key)
       }
       client.release()
@@ -131,6 +135,7 @@ export class Table<T extends TableData> {
         finalData, 
       ])
       if(res.rowCount !== 1) {
+        // Conflict
         throw new TableError('Invalid',data)
       }
       client.release()
