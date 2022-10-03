@@ -1,6 +1,6 @@
 {
   "name": "@shimaore/pgcouch",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PostgreSQL with record semantics like CouchDB",
   "type": "module",
   "module": "index.mjs",
@@ -11,22 +11,22 @@
   "private": false,
   "dependencies": {
     "@shimaore/lake": "^2.1.0",
-    "pg": "^8.7.3",
-    "pg-query-stream": "^4.2.3",
-    "pino": "^8.4.2",
+    "pg": "^8.8.0",
+    "pg-query-stream": "^4.2.4",
+    "pino": "^8.6.1",
     "runtypes": "^6.5.1",
     "ulid": "^2.3.0"
   },
   "devDependencies": {
     "@types/pg": "^8.6.5",
-    "ava": "^4.1.0",
-    "esbuild": "^0.15.5",
-    "typescript": "^4.6.2"
+    "ava": "^4.3.3",
+    "esbuild": "^0.15.10",
+    "typescript": "^4.8.4"
   },
   "scripts": {
     "build": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node index.ts && mv index.js index.mjs",
     "build:cjs": "esbuild --outfile=index.cjs index.mjs --format=cjs",
-    "pretest": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node test/test.ts && mv test/test.js test/test.mjs && esbuild --outfile=test/test.cjs test/test.mjs --format=cjs && sed -i -e \"s|from '..'|from '../index.mjs'|\" test/test.mjs",
+    "pretest": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node test/test.ts && mv test/test.js test/test.mjs && sed -i -e \"s|from '..'|from '../index.mjs'|\" test/test.mjs",
     "test": "ava"
   }
 }

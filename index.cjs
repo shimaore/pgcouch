@@ -26,8 +26,11 @@ __export(pgcouch_exports, {
   DocumentId: () => DocumentId,
   Revision: () => Revision,
   Table: () => Table,
+  TableConflictOnUpdateError: () => TableConflictOnUpdateError,
   TableData: () => TableData,
   TableError: () => TableError,
+  TableMissingOnDeleteError: () => TableMissingOnDeleteError,
+  TableMissingOnUpdateError: () => TableMissingOnUpdateError,
   TableName: () => TableName,
   buildLake: () => buildLake,
   handledPool: () => handledPool
@@ -75,6 +78,12 @@ class TableError extends Error {
     };
   }
 }
+class TableMissingOnUpdateError extends TableError {
+}
+class TableConflictOnUpdateError extends TableError {
+}
+class TableMissingOnDeleteError extends TableError {
+}
 class Table {
   constructor(check, pool, name) {
     this.check = check;
@@ -105,7 +114,7 @@ class Table {
       if (code === "42P07" || code === "23505") {
         this.logger.info({}, "init: duplicate (ignored)");
       } else {
-        throw err;
+        return Promise.reject(err);
       }
     } finally {
       client.release();
@@ -122,10 +131,10 @@ class Table {
       const res = await client.query(`
         UPDATE "${tableName}"  SET data = $1 WHERE data @> $2
       `, [finalData, key]);
-      if (res.rowCount !== 1) {
-        throw new TableError("Missing", key);
-      }
       client.release();
+      if (res.rowCount !== 1) {
+        return Promise.reject(new TableMissingOnUpdateError("Missing", key));
+      }
       return finalData;
     } else {
       const res = await client.query(`
@@ -133,10 +142,10 @@ class Table {
       `, [
         finalData
       ]);
-      if (res.rowCount !== 1) {
-        throw new TableError("Invalid", data);
-      }
       client.release();
+      if (res.rowCount !== 1) {
+        return Promise.reject(new TableConflictOnUpdateError("Invalid", data));
+      }
       return finalData;
     }
   }
@@ -161,7 +170,7 @@ class Table {
     `, [key]);
     client.release();
     if (res.rowCount !== 1) {
-      throw new TableError(`Missing`, key);
+      return Promise.reject(new TableMissingOnDeleteError(`Missing`, key));
     }
   }
   async query(query) {

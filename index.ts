@@ -64,6 +64,10 @@ export class TableError extends Error {
   }}
 }
 
+export class TableMissingOnUpdateError extends TableError {}
+export class TableConflictOnUpdateError extends TableError {}
+export class TableMissingOnDeleteError extends TableError {}
+
 export class Table<T extends TableData> {
   protected readonly tableName : string
   protected readonly logger : ReturnType<typeof Pino>
@@ -104,7 +108,7 @@ export class Table<T extends TableData> {
       if(code === '42P07' || code === '23505') {
         this.logger.info({},'init: duplicate (ignored)')
       } else {
-        throw err
+        return Promise.reject(err)
       }
     } finally {
       client.release()
@@ -122,11 +126,11 @@ export class Table<T extends TableData> {
       const res = await client.query(`
         UPDATE "${tableName}"  SET data = $1 WHERE data @> $2
       `, [ finalData, key ])
+      client.release()
       if(res.rowCount !== 1) {
         // Missing, conflict, …
-        throw new TableError('Missing',key)
+        return Promise.reject(new TableMissingOnUpdateError('Missing',key))
       }
-      client.release()
       return finalData
     } else {
       const res = await client.query(`
@@ -134,11 +138,11 @@ export class Table<T extends TableData> {
       `, [
         finalData, 
       ])
+      client.release()
       if(res.rowCount !== 1) {
         // Conflict
-        throw new TableError('Invalid',data)
+        return Promise.reject(new TableConflictOnUpdateError('Invalid',data))
       }
-      client.release()
       return finalData
     }
   }
@@ -166,7 +170,7 @@ export class Table<T extends TableData> {
     `, [ key ])
     client.release()
     if(res.rowCount !== 1) {
-      throw new TableError(`Missing`,key)
+      return Promise.reject(new TableMissingOnDeleteError(`Missing`,key))
     }
   }
 
