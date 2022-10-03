@@ -51,6 +51,12 @@ export class TableError extends Error {
         };
     }
 }
+export class TableMissingOnUpdateError extends TableError {
+}
+export class TableConflictOnUpdateError extends TableError {
+}
+export class TableMissingOnDeleteError extends TableError {
+}
 export class Table {
     constructor(check, pool, name) {
         this.check = check;
@@ -60,7 +66,8 @@ export class Table {
         this.tableName = this.name; // or could be e.g. `${this.name}  Data`
         this.logger = logger.child({ table: this.name });
     }
-    /** init — idempotent table creation
+    /** init — Connection and idempotent table creation
+     * Must be called before any other operation.
      */
     async init() {
         const { tableName } = this;
@@ -68,6 +75,8 @@ export class Table {
         // Returns an array with 4 `result`
         const table = [
             `CREATE TABLE "${tableName}" ( data JSONB NOT NULL )`,
+            // We store only one record per _id (we do not keep historical revisions,
+            // since we are not planning to support master-master replication).
             `CREATE UNIQUE INDEX "${tableName} _id" ON "${tableName}" ((data->'_id'))`,
             `CREATE INDEX "${tableName} gin" ON "${tableName}" USING GIN(data jsonb_path_ops)`,
             `CREATE INDEX "${tableName} btree" ON "${tableName}" USING BTREE(data)`,
@@ -86,7 +95,7 @@ export class Table {
                 this.logger.info({}, 'init: duplicate (ignored)');
             }
             else {
-                throw err;
+                return Promise.reject(err);
             }
         }
         finally {
@@ -104,10 +113,11 @@ export class Table {
             const res = await client.query(`
         UPDATE "${tableName}"  SET data = $1 WHERE data @> $2
       `, [finalData, key]);
-            if (res.rowCount !== 1) {
-                throw new TableError('Missing', key);
-            }
             client.release();
+            if (res.rowCount !== 1) {
+                // Missing, conflict, …
+                return Promise.reject(new TableMissingOnUpdateError('Missing', key));
+            }
             return finalData;
         }
         else {
@@ -116,10 +126,11 @@ export class Table {
       `, [
                 finalData,
             ]);
-            if (res.rowCount !== 1) {
-                throw new TableError('Invalid', data);
-            }
             client.release();
+            if (res.rowCount !== 1) {
+                // Conflict
+                return Promise.reject(new TableConflictOnUpdateError('Invalid', data));
+            }
             return finalData;
         }
     }
@@ -146,7 +157,7 @@ export class Table {
     `, [key]);
         client.release();
         if (res.rowCount !== 1) {
-            throw new TableError(`Missing`, key);
+            return Promise.reject(new TableMissingOnDeleteError(`Missing`, key));
         }
     }
     /**
