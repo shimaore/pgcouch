@@ -1,18 +1,9 @@
-import Pg from 'pg';
-const { Pool } = Pg;
 import QueryStream from 'pg-query-stream';
 import lake from '@shimaore/lake';
 const { from } = lake;
-import Pino from 'pino';
 import { Contract } from 'runtypes';
 import * as rt from 'runtypes';
 import { createHash } from 'crypto';
-const logger = Pino({ name: '@shimaore/pgcouch' });
-export const handledPool = async () => {
-    const pool = new Pool();
-    pool.on('error', (error) => logger.error({ error }, 'pool.error'));
-    return pool;
-};
 /** TableName — ensures the name is a valid (e.g. CouchDB) name.
  */
 export const TableName = rt.String;
@@ -64,10 +55,11 @@ export class Table {
         this.name = name;
         TableName.check(this.name);
         this.tableName = this.name; // or could be e.g. `${this.name}  Data`
-        this.logger = logger.child({ table: this.name });
     }
     /** init — Connection and idempotent table creation
      * Must be called before any other operation.
+     *
+     * @returns true if the table existed
      */
     async init() {
         const { tableName } = this;
@@ -87,12 +79,13 @@ export class Table {
                 await client.query(q);
             }
             await client.query('COMMIT');
+            return false;
         }
         catch (err) {
             await client.query('ROLLBACK');
             const code = err?.code;
             if (code === '42P07' || code === '23505') {
-                this.logger.info({}, 'init: duplicate (ignored)');
+                return true;
             }
             else {
                 return Promise.reject(err);

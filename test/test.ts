@@ -1,6 +1,18 @@
 import test from 'ava'
 
-import { TableData, handledPool, Table, TableConflictOnUpdateError } from '..'
+import Pg from 'pg'
+const { Pool } = Pg
+import Pino from 'pino'
+
+const logger = Pino({ name: 'test' })
+
+const handledPool = async () => {
+  const pool = new Pool()
+  pool.on('error', (error) => logger.error({error},'pool.error'))
+  return pool
+}
+
+import { TableData, Table, TableConflictOnUpdateError } from '..'
 import * as rt from 'runtypes'
 
 const Human = TableData.extend({
@@ -38,8 +50,16 @@ test('Init() should be idempotent', async (t) => {
   const pool = await handledPool()
   const table = new Table<Human>( Human.check, pool, 'human' )
   await table.init()
-  await table.init()
-  await table.init()
+  const e1 = await table.init()
+  if(!e1) {
+    t.fail()
+    return
+  }
+  const e2 = await table.init()
+  if(!e1) {
+    t.fail()
+    return
+  }
   t.pass()
 })
 // test('It should process commands with history', async (t) => {
