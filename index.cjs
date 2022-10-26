@@ -32,25 +32,15 @@ __export(pgcouch_exports, {
   TableMissingOnDeleteError: () => TableMissingOnDeleteError,
   TableMissingOnUpdateError: () => TableMissingOnUpdateError,
   TableName: () => TableName,
-  buildLake: () => buildLake,
-  handledPool: () => handledPool
+  buildLake: () => buildLake
 });
 module.exports = __toCommonJS(pgcouch_exports);
-var import_pg = __toESM(require("pg"), 1);
 var import_pg_query_stream = __toESM(require("pg-query-stream"), 1);
 var import_lake = __toESM(require("@shimaore/lake"), 1);
-var import_pino = __toESM(require("pino"), 1);
 var import_runtypes = require("runtypes");
 var rt = __toESM(require("runtypes"), 1);
 var import_crypto = require("crypto");
-const { Pool } = import_pg.default;
 const { from } = import_lake.default;
-const logger = (0, import_pino.default)({ name: "@shimaore/pgcouch" });
-const handledPool = async () => {
-  const pool = new Pool();
-  pool.on("error", (error) => logger.error({ error }, "pool.error"));
-  return pool;
-};
 const TableName = rt.String;
 const DocumentId = rt.String.withConstraint((s) => s.length > 0 || "document id must not be the empty string");
 const Revision = rt.String.withBrand("Revision").withConstraint((s) => s.length > 0 || "revision must not be the empty string");
@@ -91,7 +81,6 @@ class Table {
     this.name = name;
     TableName.check(this.name);
     this.tableName = this.name;
-    this.logger = logger.child({ table: this.name });
   }
   async init() {
     const { tableName } = this;
@@ -108,11 +97,12 @@ class Table {
         await client.query(q);
       }
       await client.query("COMMIT");
+      return false;
     } catch (err) {
       await client.query("ROLLBACK");
       const code = err?.code;
       if (code === "42P07" || code === "23505") {
-        this.logger.info({}, "init: duplicate (ignored)");
+        return true;
       } else {
         return Promise.reject(err);
       }

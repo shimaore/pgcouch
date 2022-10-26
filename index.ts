@@ -1,20 +1,10 @@
-import Pg, { Pool as PoolType, Query } from 'pg'
-const { Pool } = Pg
+import { Pool } from 'pg'
 import QueryStream from 'pg-query-stream'
 import lake, { LakeAsyncIterator } from '@shimaore/lake'
 const { from } = lake
-import Pino from 'pino'
 import { Contract } from 'runtypes'
 import * as rt from 'runtypes'
 import { createHash } from 'crypto'
-
-const logger = Pino({ name: '@shimaore/pgcouch' })
-
-export const handledPool = async () => {
-  const pool = new Pool()
-  pool.on('error', (error) => logger.error({error},'pool.error'))
-  return pool
-}
 
 /** TableName — ensures the name is a valid (e.g. CouchDB) name.
  */
@@ -70,21 +60,21 @@ export class TableMissingOnDeleteError extends TableError {}
 
 export class Table<T extends TableData> {
   protected readonly tableName : string
-  protected readonly logger : ReturnType<typeof Pino>
   constructor(
     public readonly check: (x:any) => T,
-    protected readonly pool:PoolType,
+    protected readonly pool:Pool,
     public readonly name:TableName,
   ) {
     TableName.check(this.name)
     this.tableName = this.name // or could be e.g. `${this.name}  Data`
-    this.logger = logger.child({ table: this.name })
   }
 
   /** init — Connection and idempotent table creation
    * Must be called before any other operation.
+   *
+   * @returns true if the table existed
    */
-  async init() {
+  async init() : Promise<boolean> {
     const { tableName } = this
     const client = await this.pool.connect()
     // Returns an array with 4 `result`
@@ -102,11 +92,12 @@ export class Table<T extends TableData> {
         await client.query(q)
       }
       await client.query('COMMIT')
+      return false
     } catch(err:any) {
       await client.query('ROLLBACK')
       const code = err?.code
       if(code === '42P07' || code === '23505') {
-        this.logger.info({},'init: duplicate (ignored)')
+        return true
       } else {
         return Promise.reject(err)
       }
@@ -197,7 +188,7 @@ export class Table<T extends TableData> {
   }
 }
 
-export const buildLake = async (queryStream:QueryStream,pool:PoolType) : Promise<LakeAsyncIterator<unknown>> => {
+export const buildLake = async (queryStream:QueryStream,pool:Pool) : Promise<LakeAsyncIterator<unknown>> => {
   const stream : QueryStream = await new Promise( (resolve,reject) => {
       pool.connect( (err,client,done) => {
         if (err) {
