@@ -150,7 +150,7 @@ export class Table<T extends TableData> {
     }
   }
 
-  async delete(data:TableData) {
+  async delete(data:TableData) : Promise<void> {
     this.check(data)
     Revision.check(data._rev)
     const { tableName } = this
