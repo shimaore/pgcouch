@@ -1,6 +1,6 @@
 {
   "name": "@shimaore/pgcouch",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "PostgreSQL with record semantics like CouchDB",
   "type": "module",
   "module": "index.mjs",
