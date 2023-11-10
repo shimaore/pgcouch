@@ -1,6 +1,5 @@
 import QueryStream from 'pg-query-stream';
-import lake from '@shimaore/lake';
-const { from } = lake;
+import { from } from '@shimaore/lake';
 import { Contract } from 'runtypes';
 import * as rt from 'runtypes';
 import { createHash } from 'crypto';
@@ -178,6 +177,10 @@ export const buildLake = async (queryStream, pool) => {
         pool.connect((err, client, done) => {
             if (err) {
                 reject(err);
+                return;
+            }
+            if (!client) {
+                reject(new Error('No client'));
                 return;
             }
             const stream = client.query(queryStream);
