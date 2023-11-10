@@ -190,3 +190,4 @@ export const buildLake = async (queryStream, pool) => {
     });
     return from(stream).map(({ data }) => data);
 };
+//# sourceMappingURL=index.js.map
