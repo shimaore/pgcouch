@@ -5,6 +5,7 @@
   "type": "module",
   "module": "index.mjs",
   "main": "index.cjs",
+  "types": "index.ts",
   "exports": {
     "require": "./index.cjs",
     "import": "./index.mjs"
