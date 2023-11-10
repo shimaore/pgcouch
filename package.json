@@ -5,7 +5,7 @@
   "type": "module",
   "module": "index.mjs",
   "main": "index.cjs",
-  "types": "index.ts",
+  "types": "index.d.ts",
   "exports": {
     "require": "./index.cjs",
     "import": "./index.mjs"
@@ -28,7 +28,7 @@
     "typescript": "5.2.2"
   },
   "scripts": {
-    "build": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node index.ts && mv index.js index.mjs",
+    "build": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node --declaration true --sourceMap true --declarationMap true index.ts && mv index.js index.mjs && mv index.js.map index.mjs.map",
     "build:cjs": "esbuild --outfile=index.cjs index.mjs --format=cjs",
     "pretest": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node test/test.ts && mv test/test.js test/test.mjs && sed -i -e \"s|from '\\.\\.'|from '../index.mjs'|\" test/test.mjs",
     "test": "ava"
