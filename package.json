@@ -6,10 +6,6 @@
   "module": "index.mjs",
   "main": "index.cjs",
   "types": "index.d.ts",
-  "exports": {
-    "require": "./index.cjs",
-    "import": "./index.mjs"
-  },
   "license": "MIT",
   "repository": "gitlab.com/shimaore/pg-couch",
   "author": "Stéphane Alnet <stephane@shimaore.net>",
