@@ -4,7 +4,6 @@
   "description": "PostgreSQL with record semantics like CouchDB",
   "type": "module",
   "module": "index.mjs",
-  "main": "index.cjs",
   "types": "index.d.ts",
   "license": "MIT",
   "repository": "gitlab.com/shimaore/pg-couch",
