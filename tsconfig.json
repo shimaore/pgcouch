@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "strict": true,
+    "target": "esnext",
+    "module": "nodenext",
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "sourceMap": true,
+    "declarationMap": true,
+    "allowSyntheticDefaultImports": true,
+    "outDir": "build",
+    "rootDir": "."
+  },
+  "exclude": [
+    "build",
+    "test-ts"
+  ]
+}

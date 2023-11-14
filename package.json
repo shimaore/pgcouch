@@ -1,31 +1,36 @@
 {
   "name": "@shimaore/pgcouch",
   "version": "1.3.4",
-  "description": "PostgreSQL with record semantics like CouchDB",
-  "type": "module",
-  "module": "index.mjs",
-  "types": "index.d.ts",
-  "license": "MIT",
-  "repository": "gitlab.com/shimaore/pg-couch",
-  "author": "Stéphane Alnet <stephane@shimaore.net>",
-  "private": false,
   "dependencies": {
-    "@shimaore/lake": "3.0.1",
+    "@shimaore/lake": "3.0.3",
     "pg": "8.11.3",
     "pg-query-stream": "4.5.3",
     "runtypes": "6.7.0"
   },
   "devDependencies": {
+    "@types/node": "^20.9.0",
     "@types/pg": "8.10.9",
     "ava": "5.3.1",
     "esbuild": "0.19.5",
-    "pino": "8.16.1",
     "typescript": "5.2.2"
   },
   "scripts": {
-    "build": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node --declaration true --sourceMap true --declarationMap true index.ts && mv index.js index.mjs && mv index.js.map index.mjs.map",
-    "build:cjs": "esbuild --outfile=index.cjs index.mjs --format=cjs",
-    "pretest": "tsc --strict --esModuleInterop --target ES2021 --moduleResolution Node test/test.ts && mv test/test.js test/test.mjs && sed -i -e \"s|from '\\.\\.'|from '../index.mjs'|\" test/test.mjs",
-    "test": "ava"
-  }
+    "build": "tsc && mv build/src/index.js build/src/index.mjs && mv build/src/index.js.map build/src/index.mjs.map",
+    "build:cjs": "esbuild --outfile=build/src/index.cjs build/src/index.mjs --format=cjs",
+    "pretest": "yarn build",
+    "test": "cd test-ts && yarn && yarn test"
+  },
+  "description": "PostgreSQL with record semantics like CouchDB",
+  "type": "module",
+  "module": "./build/src/index.mjs",
+  "main": "./build/src/index.cjs",
+  "types": "./build/src/index.d.ts",
+  "exports": {
+    "require": "./build/src/index.cjs",
+    "import": "./build/src/index.mjs",
+    "types": "./build/src/index.d.ts"
+  },
+  "repository": "gitlab.com/shimaore/pg-couch",
+  "author": "Stéphane Alnet <stephane@shimaore.net>",
+  "license": "MIT"
 }
