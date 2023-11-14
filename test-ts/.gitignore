@@ -1,0 +1,7 @@
+node_modules/
+test.js
+test.mjs
+yarn-error.log
+test.d.ts
+test.d.ts.map
+test.js.map

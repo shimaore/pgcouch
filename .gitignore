@@ -121,3 +121,6 @@ dist
 # Local
 test/*.mjs
 test/*.cjs
+with-history.js
+with-history.js.map
+build/

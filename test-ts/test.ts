@@ -2,17 +2,14 @@ import test from 'ava'
 
 import Pg from 'pg'
 const { Pool } = Pg
-import Pino from 'pino'
-
-const logger = Pino({ name: 'test' })
 
 const handledPool = async () => {
   const pool = new Pool()
-  pool.on('error', (error) => logger.error({error},'pool.error'))
+  pool.on('error', (error) => console.error({error},'pool.error'))
   return pool
 }
 
-import { TableData, Table, TableConflictOnUpdateError } from '..'
+import { TableData, Table, TableConflictOnUpdateError } from '@shimaore/pgcouch'
 import * as rt from 'runtypes'
 
 const Human = TableData.extend({
